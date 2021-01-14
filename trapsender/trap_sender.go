@@ -111,9 +111,9 @@ func (trapSender TrapSender) generateVarBinds(alertGroup types.AlertGroup) (snmp
 	snmpTrapParam := ".1.3.6.1.4.1.32804.1.66.2"
 	varBinds = addUpTime(varBinds)
 	varBinds = append(varBinds, snmpgo.NewVarBind(snmpgo.OidSnmpTrap, trapOid))
-	varBinds = addStringSubOid(varBinds, snmpTrapParam,, "1", trapUniqueID)
-	varBinds = addStringSubOid(varBinds, snmpTrapParam,, "2", alertGroup.Severity)
-	varBinds = addStringSubOid(varBinds, snmpTrapParam,, "3", *descriptions)
+	varBinds = addStringSubOid(varBinds, snmpTrapParam, "1", trapUniqueID)
+	varBinds = addStringSubOid(varBinds, snmpTrapParam, "2", alertGroup.Severity)
+	varBinds = addStringSubOid(varBinds, snmpTrapParam, "3", *descriptions)
 
 	return varBinds, nil
 }
