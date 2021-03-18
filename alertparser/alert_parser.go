@@ -49,7 +49,8 @@ func readCircuitAlarms() map[string] string {
 	alarms := make(map[string]string)
 	file, err := os.Open("circuit-alertmap.txt")
 	if err != nil {
-		log.Fatal(err)
+		log.Print(err)
+		return alarms
 	}
 	defer file.Close()
 
