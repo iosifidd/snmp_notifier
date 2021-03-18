@@ -14,12 +14,17 @@
 package alertparser
 
 import (
+	"bufio"
 	"fmt"
+	"log"
+	"os"
 	"strings"
 
 	"github.com/maxwo/snmp_notifier/commons"
 	"github.com/maxwo/snmp_notifier/types"
 )
+
+var circuitAlarms = readCircuitAlarms()
 
 // AlertParser parses alerts from the Prometheus Alert Manager
 type AlertParser struct {
@@ -40,6 +45,31 @@ func New(configuration Configuration) AlertParser {
 	return AlertParser{configuration}
 }
 
+func readCircuitAlarms() map[string] string {
+	alarms := make(map[string]string)
+	file, err := os.Open("circuit-alertmap.txt")
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer file.Close()
+
+	scanner := bufio.NewScanner(file)
+	for scanner.Scan() {
+		line := scanner.Text()
+		s := strings.Split(line, ",")
+		if len(s) != 2 {
+			log.Print("Invalid line detected")
+			continue
+		}
+		alarms[s[0]] = s[1]
+	}
+
+	if err := scanner.Err(); err != nil {
+		log.Fatal(err)
+	}
+	return alarms
+}
+
 // Parse parses alerts coming from the Prometheus Alert Manager
 func (alertParser AlertParser) Parse(alertsData types.AlertsData) (*types.AlertBucket, error) {
 	var (
@@ -51,6 +81,9 @@ func (alertParser AlertParser) Parse(alertsData types.AlertsData) (*types.AlertB
 		oid, err := alertParser.getAlertOID(alert)
 		if err != nil {
 			return nil, err
+		}
+		if oid == nil {
+			return nil, nil
 		}
 		key := strings.Join([]string{*oid, "[", groupID, "]"}, "")
 		if _, found := alertGroups[key]; !found {
@@ -93,7 +126,16 @@ func (alertParser AlertParser) getAlertOID(alert types.Alert) (*string, error) {
 	if _, found := alert.Labels[alertParser.configuration.OIDLabel]; found {
 		oid = alert.Labels[alertParser.configuration.OIDLabel]
 	} else {
-		oid = alertParser.configuration.DefaultOID
+		alertName := alert.Labels["alertname"]
+		circuitOid, prs := circuitAlarms[alertName]
+		if !prs {
+			log.Printf("Alert %s not found in circuit alarms", alertName)
+			return nil, nil
+		} else {
+			log.Printf("Alert: %s found in circuit alarms, using oid: %s", alertName, circuitOid)
+			oid = circuitOid
+		}
+		//oid = alertParser.configuration.DefaultOID
 	}
 	if !commons.IsOID(oid) {
 		return nil, fmt.Errorf("Invalid OID provided: \"%s\"", oid)

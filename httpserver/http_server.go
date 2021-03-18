@@ -88,11 +88,14 @@ func (httpServer HTTPServer) Configure() *http.Server {
 			errorHandler(w, http.StatusBadRequest, err, &data)
 			return
 		}
-
-		err = httpServer.trapSender.SendAlertTraps(*alertBucket)
-		if err != nil {
-			errorHandler(w, http.StatusBadGateway, err, &data)
-			return
+		if alertBucket == nil {
+			log.Infof("Ignoring alert...")
+		} else {
+			err = httpServer.trapSender.SendAlertTraps(*alertBucket)
+			if err != nil {
+				errorHandler(w, http.StatusBadGateway, err, &data)
+				return
+			}
 		}
 
 		telemetry.RequestTotal.WithLabelValues("200").Inc()
