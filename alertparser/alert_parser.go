@@ -68,6 +68,7 @@ func readCircuitAlarms() map[string] string {
 	if err := scanner.Err(); err != nil {
 		log.Fatal(err)
 	}
+	log.Printf("Loaded %d alarms from Circuit mapping file", len(alarms))
 	return alarms
 }
 
