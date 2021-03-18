@@ -125,13 +125,14 @@ func (alertParser AlertParser) getAlertOID(alert types.Alert) (*string, error) {
 	var (
 		oid string
 	)
-	if _, found := alert.Labels[alertParser.configuration.OIDLabel]; found {
-		oid = alert.Labels[alertParser.configuration.OIDLabel]
+	if incomingOid, found := alert.Labels[alertParser.configuration.OIDLabel]; found {
+		log.Printf("Alert with oid set found, using: %s", incomingOid)
+		oid = incomingOid
 	} else {
 		alertName := alert.Labels["alertname"]
 		circuitOid, prs := circuitAlarms[alertName]
 		if !prs {
-			log.Printf("Alert %s not found in circuit alarms", alertName)
+			log.Printf("Alert %s not found in circuit alarms, will skip", alertName)
 			return nil, nil
 		} else {
 			log.Printf("Alert: %s found in circuit alarms, using oid: %s", alertName, circuitOid)
